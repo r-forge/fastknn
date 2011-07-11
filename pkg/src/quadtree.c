@@ -173,7 +173,6 @@ R_Find_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rfulldat, SEXP Rnewcols, SEXP Rfullcol
   int n = INTEGER(Rfulln)[0];
   int newn = INTEGER(Rnewn)[0];
   
-  
   qtree_t *curnode;
   int k = INTEGER( Rk ) [ 0 ];
   double dists[ newn * k ];
@@ -307,7 +306,6 @@ void Insert_Dist(double *dists, double newdist, int *inds, int newind, int k, in
   return;
 }  
 
-
 void
 Harvest_Data_KNN(qtree_t *node, int excludepos, double leftbound, double rightbound, double lowbound, double highbound, int *inds, double *dists, double newx, double newy, double *x, double *y, int k, int start)
 {
@@ -331,7 +329,7 @@ Harvest_Data_KNN(qtree_t *node, int excludepos, double leftbound, double rightbo
     
     double midhoriz = ( node -> left + node -> right ) / 2.0;
     double midvert = (node -> upper + node -> lower ) / 2.0;
-
+    //each valid node has 0 or 4 children.
     if (node -> uleft != NULL)
       {
 	if (excludepos != 1)
