@@ -47,7 +47,8 @@ int * Grow_Return_Array(int **ar, int *size);
 void Get_XY_Ptrs( SEXP dattype, SEXP cols, SEXP Rx, SEXP Ry, double **ptrs);
 
 SEXP R_Build_Quadtree(SEXP Rx, SEXP Ry, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP RyMin, SEXP RmaxDepth);
-SEXP R_Find_KNN(SEXP Rtree, SEXP Rnewx, SEXP Rnewy, SEXP Rx, SEXP Ry, SEXP Rk);
+SEXP R_Find_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rfulldat, SEXP Rnewcols, SEXP Rfullcols, SEXP Rnewtyp, SEXP Rfulltyp, SEXP Rk, SEXP Rnewn, SEXP Rfulln);
+
 SEXP R_Get_Points_In_Box(SEXP Rtree, SEXP Rleft, SEXP Rright, SEXP Rdown, SEXP Rup, SEXP Rx, SEXP Ry, SEXP dattype, SEXP cols);
 SEXP R_Get_Top_Left_Order(SEXP Rtree, SEXP Rlen);
 void R_Free_Quad_Tree( SEXP treeptr);

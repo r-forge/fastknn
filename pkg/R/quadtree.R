@@ -17,7 +17,7 @@ setGeneric("findKNN",
            standardGeneric("findKNN")
            )
 setMethod("findKNN", "QuadTree",
-          function(tree, newdat, fulldat, k)
+          function(tree, newdat, fulldat, newcols, fullcols, k)
           {
             if (is(newdat, "matrix"))
               {
@@ -41,7 +41,15 @@ setMethod("findKNN", "QuadTree",
               } else {
                 stop("fulldat must be either a matrix or a data.frame")
               }
- 
+            newcols = as.integer(newcols)
+            fullcols = as.integer(fullcols)
+            if (length(newcols) != 2)
+              stop("Incorrect number of columns specified for new data")
+            if (length(fullcols) != 2 )
+              stop("Incorrect number of columns specified for full data")
+            k = as.integer(k)
+            
+            .Call("R_Find_KNN", tree, newdat, fulldat, newcols, fullcols, newtype, fulltype, k, nrow(newdat), nrow(fulldat))
           }
           )
 
@@ -51,10 +59,11 @@ createIndex = function(data, type = "quad", columns = c(1, 2), ...)
       {
         if(length(columns) != 2)
           stop("wrong number of columns for this index type.")
-        x = data[,columns[1]]
+        x = data[,columns[1]] 
         y = data[,columns[2]]
         quadTree(x,y, ... )
       }
+   
   }
         
 
@@ -145,7 +154,7 @@ getPointsInBox =  function(tree, left, right, down, up, x,y, data = NULL, cols =
                   stop("Length of data vectors does not match number of points in tree.")
                }
             if(datframe)
-              .Call("R_Get_Points_In_Box", tree, left, right, down, up, data, ncol(data), dattype, cols)
+              .Call("R_Get_Points_In_Box", tree, left, right, down, up, data, nrow(data), dattype, cols)
             else
               .Call("R_Get_Points_In_Box", tree, left, right, down, up, x, y, dattype, cols)
           }

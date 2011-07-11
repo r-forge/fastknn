@@ -67,50 +67,46 @@ int Add_Bucket_Point(qtree_t *node, double *x, double *y, int *newdat, int newda
   int toret = 0;
   int *olddat, olddatsize;
   qtree_t *curnode = node;
-  //remember if there are more than one point, they are identical
-  double newx = x[ newdat[ 0 ] ];
-  double newy = y[ newdat[ 0 ] ];
-  //descend to leaf node whose area contains the new cordinates
-  curnode = Descend_To_Container(node, newx, newy);
-
-  //if the leaf is empty, insert the data
-  if (curnode -> numdata == 0)
+  double newx, newy;
+  for ( int i = 0; i < newdatsize; i++)
     {
-      //if it is a new point, it is probably a pointer to a variable elsewhere that may change
-      if (newdatsize == 1)
+      newx = x[ newdat[ i ] ];
+      newy = y[ newdat[ i ] ];
+      //descend to leaf node whose area contains the new cordinates
+      curnode = Descend_To_Container(node, newx, newy);
+
+      //if the leaf is empty, insert the data
+      if (curnode -> numdata == 0)
 	{
 	  olddat = calloc(1, sizeof(int));
-	  olddat[0] = *newdat;
-	} else {
-	olddat = newdat;
-      }
-      curnode -> data = olddat;
-      curnode -> numdata = newdatsize;
-      toret = 1;
-    }
-  else if (curnode -> depth == maxDepth || (x[ *curnode -> data  ] == newx && y[ *curnode -> data ] == newy ) ) 
-    {
-  /*
-  else if (x[ *curnode -> data  ] == newx && y[ *curnode -> data ] == newy )
-    {
-  */
+	  olddat[0] = newdat[i];
+	  curnode -> data = olddat;
+	  curnode -> numdata ++;
+	  toret = 1;
+	}
+      //else if (curnode -> depth == maxDepth || (x[ *curnode -> data  ] == newx && y[ *curnode -> data ] == newy ) ) 
+      else if (curnode -> depth == maxDepth)
+      {
+	  
       //realloc preserves the values of the previous elements
-      curnode -> data = realloc(curnode -> data, sizeof(int) * (curnode -> numdata + newdatsize));
-      for (int j = 0; j < newdatsize; j++)
-	curnode -> data[curnode -> numdata + j] = newdat[j];
-      
-      curnode -> numdata = curnode -> numdata + newdatsize;
-      //curnode -> data = tmpdat;
-      toret = 1;
-    } else {
-      //leaf had data not identical to new coordinates. Thus we add depth and try again
-      olddat = curnode -> data;
-      olddatsize = curnode -> numdata;
-      Add_Depth(curnode);
-      curnode -> numdata = 0;
-      curnode -> data = NULL;
-      Add_Bucket_Point(curnode, x, y, olddat, olddatsize, maxDepth);
-      toret = Add_Bucket_Point(curnode, x, y, newdat, newdatsize, maxDepth);
+	  curnode -> data = realloc(curnode -> data, sizeof(int) * (curnode -> numdata + 1));
+	  // for (int j = 0; j < newdatsize; j++)
+	  //  curnode -> data[curnode -> numdata + j] = newdat[j];
+	  curnode -> data [curnode -> numdata ] = newdat[i];
+	  
+	  curnode -> numdata = curnode -> numdata + 1;
+	  //curnode -> data = tmpdat;
+	  toret = 1;
+	} else {
+	//leaf had data and we are not yet at max depth. Thus we add depth and try again
+	olddat = curnode -> data;
+	olddatsize = curnode -> numdata;
+	Add_Depth(curnode);
+	curnode -> numdata = 0;
+	curnode -> data = NULL;
+	Add_Bucket_Point(curnode, x, y, olddat, olddatsize, maxDepth);
+	toret = Add_Bucket_Point(curnode, x, y, newdat, newdatsize, maxDepth);
+      }
     }
     return toret;
 }
@@ -158,39 +154,50 @@ static checked = 0;
 static int checkpassed = 0;
 SEXP
 //returns candidate indices for k nearest neighbors
-R_Find_KNN(SEXP Rtree, SEXP Rnewx, SEXP Rnewy, SEXP Rx, SEXP Ry, SEXP Rk)
+R_Find_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rfulldat, SEXP Rnewcols, SEXP Rfullcols, SEXP Rnewtyp, SEXP Rfulltyp, SEXP Rk, SEXP Rnewn, SEXP Rfulln)
 {
   checkpassed = 0;
   qtree_t *tree = (qtree_t *) R_ExternalPtrAddr( GET_SLOT( Rtree, Rf_install( "ref" ) ) );
 
+  double *x, *y, *newx, *newy;
   
-  int n = LENGTH(Rnewx);
+  double **ptrs = calloc(2, sizeof(double*));
+  Get_XY_Ptrs(Rnewtyp, Rnewcols, Rnewdat, Rnewn, ptrs );
+  newx = ptrs[0];
+  newy = ptrs[1];
+  ptrs = calloc(2, sizeof(double*));
+  Get_XY_Ptrs(Rfulltyp, Rfullcols, Rfulldat, Rfulln, ptrs );
+  x = ptrs[0];
+  y = ptrs[1];
   
-  double *x = REAL( Rx );
-  double *y = REAL( Ry );
+  int n = INTEGER(Rfulln)[0];
+  int newn = INTEGER(Rnewn)[0];
+  
+  
   qtree_t *curnode;
   int k = INTEGER( Rk ) [ 0 ];
-  double dists[ n * k ];
-  int chosen[ n * k ];
-  double newx, newy;
-  int ind;
+  double dists[ newn * k ];
+  int chosen[ newn * k ];
+    int ind = 0;
   double newpt[2] = { 0 , 0 };
   double oldpt[2] = { 0 , 0 };
   double tmpdist; 
   int filled;
   int j, pos, tmp, cnt = 0;
-  for(int l = 0; l < n; l++)
+  double tmpnewx, tmpnewy;
+  for(int l = 0; l < newn; l++)
     {
-      newx = REAL( Rnewx )[ l ];
-      newy = REAL( Rnewy )[ l ];
-      newpt[0] = newx; newpt[1] = newy;
+      tmpnewx = newx[ l ];
+      tmpnewy = newy[ l ];
+      newpt[0] = tmpnewx; newpt[1] = tmpnewy;
       for(int i= l * k; i < (l + 1) * k; i++)
 	dists[i] = -1.0;
       //descend to leaf closest to our x, y coordinates
       //XXX but sometimes that leaf doesn't have data!!
-      curnode = Descend_To_Container(tree, newx, newy);
+      curnode = Descend_To_Container(tree, tmpnewx, tmpnewy);
       if( curnode -> numdata > 0)
 	{
+	  cnt = 0;
 	  for (int i =0; i < curnode -> numdata ; i ++)
 	    {
 	      ind = curnode -> data[ i ];
@@ -223,14 +230,14 @@ R_Find_KNN(SEXP Rtree, SEXP Rnewx, SEXP Rnewy, SEXP Rx, SEXP Ry, SEXP Rk)
 	  pos = curnode -> pos;
 	  curnode = curnode -> parent;
 	  tmp = ( l + 1 ) * k - 1;
-	  Harvest_Data_KNN(curnode, pos, newx - dists[ tmp ], newx + dists[ tmp ], newy - dists[ tmp ], newy + dists[ tmp ], &chosen, &dists, newx, newy, x, y, k, l * k);
+	  Harvest_Data_KNN(curnode, pos, tmpnewx - dists[ tmp ], tmpnewx + dists[ tmp ], tmpnewy - dists[ tmp ], tmpnewy + dists[ tmp ], &chosen, &dists, tmpnewx, tmpnewy, x, y, k, l * k);
 	}
       
       fprintf(stderr, "number of nodes investigated: %d\n", checkpassed); fflush(stderr);
     }
   SEXP ans;
-  PROTECT( ans = NEW_INTEGER( n * k ) );
-  for (int i = 0; i < n * k; i++)
+  PROTECT( ans = NEW_INTEGER( newn * k ) );
+  for (int i = 0; i < newn * k; i++)
     INTEGER( ans )[ i ] = chosen[ i ] + 1;
 		    //INTEGER(ans) = & chosen;
   UNPROTECT(1);
@@ -267,6 +274,9 @@ void Insert_Dist(double *dists, double newdist, int *inds, int newind, int k, in
   int done = 0;
   while (!done && pos < start + k)
     {
+      //if the index is already in the list, we're done;
+      if (inds[pos] == newind)
+	return;
       //tie goes to the new index.
       if (dists[ pos ] >= newdist || dists[ pos ] == -1.0)
 	done = 1;
@@ -439,7 +449,8 @@ void Get_XY_Ptrs( SEXP dattype, SEXP cols, SEXP Rx, SEXP Ry, double **ptrs)
   
   if (INTEGER(dattype)[0] == 1)
     {
-      int len = LENGTH(Rx)/INTEGER(Ry)[0];
+      //in the case of a matrix/dataframe the number of rows is passed in the Ry slot.
+      int len = INTEGER(Ry)[0];
       int xcol = INTEGER(cols)[ 0 ];
       int ycol = INTEGER(cols)[ 1 ];
 	
@@ -447,6 +458,7 @@ void Get_XY_Ptrs( SEXP dattype, SEXP cols, SEXP Rx, SEXP Ry, double **ptrs)
       ptrs[1] = &(REAL( Rx )[ len * ( ycol - 1 ) ] );
     } else if (INTEGER(dattype)[0] == 2) 
     {
+      //Ry is ignored int he case of the data frame because we can just select the columns we want from the list.
       int xcol = INTEGER(cols)[ 0 ];
       int ycol = INTEGER(cols)[ 1 ];
       
