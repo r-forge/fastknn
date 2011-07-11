@@ -49,7 +49,8 @@ setMethod("findKNN", "QuadTree",
               stop("Incorrect number of columns specified for full data")
             k = as.integer(k)
             
-            .Call("R_Find_KNN", tree, newdat, fulldat, newcols, fullcols, newtype, fulltype, k, nrow(newdat), nrow(fulldat))
+            inds = .Call("R_Find_KNN", tree, newdat, fulldat, newcols, fullcols, newtype, fulltype, k, nrow(newdat), nrow(fulldat))
+            matrix(inds, byrow = TRUE, ncol = k)
           }
           )
 

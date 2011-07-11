@@ -184,19 +184,24 @@ R_Find_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rfulldat, SEXP Rnewcols, SEXP Rfullcol
   int filled;
   int j, pos, tmp, cnt = 0;
   double tmpnewx, tmpnewy;
+  for(int i= 0; i < newn*k; i++)
+    {
+      dists[i] = -1.0;
+      chosen[i] = -1;
+    }
   for(int l = 0; l < newn; l++)
     {
+      cnt = 0;
       tmpnewx = newx[ l ];
       tmpnewy = newy[ l ];
       newpt[0] = tmpnewx; newpt[1] = tmpnewy;
-      for(int i= l * k; i < (l + 1) * k; i++)
-	dists[i] = -1.0;
+
       //descend to leaf closest to our x, y coordinates
       //XXX but sometimes that leaf doesn't have data!!
       curnode = Descend_To_Container(tree, tmpnewx, tmpnewy);
       if( curnode -> numdata > 0)
 	{
-	  cnt = 0;
+	  
 	  for (int i =0; i < curnode -> numdata ; i ++)
 	    {
 	      ind = curnode -> data[ i ];
@@ -214,7 +219,7 @@ R_Find_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rfulldat, SEXP Rnewcols, SEXP Rfullcol
       
       if (ind > n - k)
 	ind = 0;
-      for (int j = ind + 1; j < ind + 1 + (k - cnt) ; j++)
+      for (int j = ind + 1; j <= ind + 1 + (k - cnt) ; j++)
 	{
 	  oldpt[0] = x[j]; oldpt[1] = y[j];
 	  tmpdist = eucl_Dist(newpt, oldpt, 2);
@@ -222,17 +227,14 @@ R_Find_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rfulldat, SEXP Rnewcols, SEXP Rfullcol
 	  Insert_Dist(&dists, tmpdist, &chosen, j, k, l*k);
 	}
       
-      
       //maxdist, ie distance to beat to get into the list, is in dists[ (l + 1) *  k - 1 ]
+      tmp = ( l + 1 ) * k - 1;
       while(curnode -> parent != NULL)
 	{
 	  pos = curnode -> pos;
 	  curnode = curnode -> parent;
-	  tmp = ( l + 1 ) * k - 1;
 	  Harvest_Data_KNN(curnode, pos, tmpnewx - dists[ tmp ], tmpnewx + dists[ tmp ], tmpnewy - dists[ tmp ], tmpnewy + dists[ tmp ], &chosen, &dists, tmpnewx, tmpnewy, x, y, k, l * k);
 	}
-      
-      fprintf(stderr, "number of nodes investigated: %d\n", checkpassed); fflush(stderr);
     }
   SEXP ans;
   PROTECT( ans = NEW_INTEGER( newn * k ) );
@@ -850,3 +852,23 @@ R_LoopTest3()
   return ScalarLogical(1);
 }
 
+void Find_Node(qtree_t *node, int val, qtree_t **ret)
+{
+  if(node -> numdata > 0 )
+    {
+      for (int i =0; i < node -> numdata; i++)
+	{
+	  if (node -> data[i] == val)
+	    {
+	      *ret = node;
+	      break;
+	    }
+	}
+    } else if (node -> uleft != NULL) {
+    Find_Node(node -> uleft, val, ret);
+    Find_Node(node -> uright, val, ret);
+    Find_Node(node -> lright, val, ret);
+    Find_Node(node -> lleft, val, ret);
+  }
+  return;
+}
