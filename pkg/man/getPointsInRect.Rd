@@ -2,74 +2,71 @@
 \alias{getPointsInRect}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-%%  ~~function to do ... ~~
+Perform Rectangular Range Lookup on a Tree Object
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Determine which two dimensional points (which have already been stored
+in a search tree) fall within a specified rectangle.
 }
 \usage{
 getPointsInRect(tree, left, right, down, up, data)
 }
-%- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{tree}{
-%%     ~~Describe \code{tree} here~~
+    S4 object representing the tree to be searched over.
 }
-  \item{left}{
-%%     ~~Describe \code{left} here~~
+\item{left}{
+  Left bound of the rectangular range. Will be converted to numeric.
 }
-  \item{right}{
-%%     ~~Describe \code{right} here~~
+\item{right}{
+Right bound of the rectungular range. Will be converted to numeric.
 }
-  \item{down}{
-%%     ~~Describe \code{down} here~~
+\item{down}{
+  Lower bound of the rectangular range. Will be converted to numeric.
 }
-  \item{up}{
-%%     ~~Describe \code{up} here~~
+\item{up}{
+Upper bound of the rectangular range. Will be converted to numeric.
 }
   \item{data}{
-%%     ~~Describe \code{data} here~~
+Data used to create the tree.
+}
+\item{columns}{
+  Columns in the \code{data} object which contain the relevant
+  data. Defaults to columns 1 and 2.
 }
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+  An integer vector is returned containing the indices (row numbers) of
+  points which fall within the specified rectangle.
 }
 \references{
-%% ~put references to the literature/web site here ~
 }
 \author{
-%%  ~~who you are~~
+Gabriel Becker
 }
-\note{
-%%  ~~further notes~~
-}
-
-%% ~Make other sections like Warning with \section{Warning }{....} ~
-
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+  \link{\code{findKNN} } 
 }
 \examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
+x = rnorm(100)
+y = rnorm(100)
+dat = cbind(x,y)
+tree = createIndex(dat) #default tree type is "quad"
+#our rectangle has corners at (0,0), (0,2), (2, 2), and (2,0)
+inds = getPointsInRect(tree, 0, 2, 0, 2, dat)
 
-## The function is currently defined as
-structure(function (tree, left, right, down, up, data) 
-standardGeneric("getPointsInRect"), generic = structure("getPointsInRect", package = "QuadTreeKNN"), package = "QuadTreeKNN", group = list(), valueClass = character(0), signature = c("tree", 
-"left", "right", "down", "up", "data"), default = `NULL`, skeleton = function (tree, 
-    left, right, down, up, data) 
-stop("invalid call in method dispatch to \"getPointsInRect\" (no default method)", 
-    domain = NA)(tree, left, right, down, up, data), class = structure("standardGeneric", package = "methods"))
+#prepare vector of plotting characters
+ch = rep(1, times = 100)
+ch[inds] = 3
+
+#plot points indicating which ones were selected as in our rectangle
+plot(x,y, pch = ch)
+#add rectangle to plot
+xpts = c(0, 0, 2, 2, 0)
+ypts = c(0, 2, 2, 0, 0)
+lines(xpts, ypts)
 }
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+\keyword{lookup}
+\keyword{search}

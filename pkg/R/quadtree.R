@@ -12,6 +12,39 @@ setMethod("getPointsInRect", "QuadTree",
           }
           )
 
+setGeneric("findKNN",
+           function(tree, newdat, fulldat, newcols=1:2, fullcols = 1:2,  k = 5)
+           standardGeneric("findKNN")
+           )
+setMethod("findKNN", "QuadTree",
+          function(tree, newdat, fulldat, k)
+          {
+            if (is(newdat, "matrix"))
+              {
+                newtype = 1L
+                if (mode(newdat) != "double")
+                  mode( newdat ) = "double"
+              } else if (is(newdat, "data.frame")) {
+                newtype = 2L
+                
+              } else {
+                stop("newdat must be either a matrix or a data.frame")
+              }
+           if (is(fulldat, "matrix"))
+              {
+                fulltype = 1L
+                if (mode(fulldat) != "double")
+                  mode(fulldat) = "double"
+              } else if (is(fulldat, "data.frame")) {
+                fulltype = 2L
+                
+              } else {
+                stop("fulldat must be either a matrix or a data.frame")
+              }
+ 
+          }
+          )
+
 createIndex = function(data, type = "quad", columns = c(1, 2), ...)
   {
     if (tolower(type) == "quad")

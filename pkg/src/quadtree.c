@@ -382,6 +382,12 @@ R_Get_Points_In_Box(SEXP Rtree, SEXP Rleft, SEXP Rright, SEXP Rdown, SEXP Rup, S
   
   double up, down, left, right;
   double *x, *y;
+  
+  double **ptrs = calloc(2, sizeof(double*));
+  Get_XY_Ptrs(dattype, cols, Rx, Ry, ptrs );
+  x = ptrs[0];
+  y = ptrs[1];
+  /*  
   if (INTEGER(dattype)[0] == 1)
     {
       int len = LENGTH(Rx)/INTEGER(Ry)[0];
@@ -402,6 +408,7 @@ R_Get_Points_In_Box(SEXP Rtree, SEXP Rleft, SEXP Rright, SEXP Rdown, SEXP Rup, S
     x = REAL(Rx);
     y = REAL(Ry);
   }
+  */
   qtree_t *tree = (qtree_t *) R_ExternalPtrAddr( GET_SLOT( Rtree, Rf_install( "ref" ) ) );
   up = REAL(Rup)[0];
   down = REAL(Rdown)[0];
@@ -423,7 +430,35 @@ R_Get_Points_In_Box(SEXP Rtree, SEXP Rleft, SEXP Rright, SEXP Rdown, SEXP Rup, S
     INTEGER( ans )[ i ] = found[i] + 1; 
   UNPROTECT(1);
   free(found);
+  free(ptrs);
   return ans;
+}
+
+void Get_XY_Ptrs( SEXP dattype, SEXP cols, SEXP Rx, SEXP Ry, double **ptrs)
+{
+  
+  if (INTEGER(dattype)[0] == 1)
+    {
+      int len = LENGTH(Rx)/INTEGER(Ry)[0];
+      int xcol = INTEGER(cols)[ 0 ];
+      int ycol = INTEGER(cols)[ 1 ];
+	
+      ptrs[0] = &(REAL( Rx )[ len * ( xcol - 1 ) ] );
+      ptrs[1] = &(REAL( Rx )[ len * ( ycol - 1 ) ] );
+    } else if (INTEGER(dattype)[0] == 2) 
+    {
+      int xcol = INTEGER(cols)[ 0 ];
+      int ycol = INTEGER(cols)[ 1 ];
+      
+      ptrs[0] = REAL(VECTOR_ELT(Rx, xcol - 1) );
+      ptrs[1] = REAL(VECTOR_ELT(Rx, ycol - 1 ) ) ;
+    
+  } else {
+    ptrs[0] = REAL(Rx);
+    ptrs[1] = REAL(Ry);
+  }
+
+  return;
 }
 
 void
@@ -458,6 +493,7 @@ Get_Data_In_Box(qtree_t *tree, double left, double right, double down, double up
 		    {
 		    if(tmpy <= up)
 		      {
+			
 			if (*pos >= *cursize - 1)
 			  {
 			    
@@ -470,9 +506,8 @@ Get_Data_In_Box(qtree_t *tree, double left, double right, double down, double up
 			  }
 			
 			( *found )[ *pos ] = ind;
+     			*pos += 1 ;
 			
-			
-			*pos += 1 ;	
 		      }
 		    
 		    }
@@ -752,16 +787,17 @@ call_R_Dist(double *pt1, double *pt2, int d, SEXP fun)
 SEXP
 R_LoopTest1()
 {
-  int *thing = calloc(50*53000, sizeof(int));
+  int *thing = calloc(10000000, sizeof(int));
   int pos = 0;
-  for(int i = 0; i < 53000; i++)
+  for(int i = 0; i < 333333; i++)
     {
-      for (int j = 0; j < 50; j++)
+      for (int j = 0; j < 33; j++)
 	{
 	  pos ++;
 	  thing[pos] = i;
 	}
     }
+  free(thing);
   return ScalarLogical(1);
 }
 
@@ -770,15 +806,37 @@ SEXP
 R_LoopTest2()
 {
   int pos = 0;
-  int *thing = calloc(235000, sizeof(int));
-  for(int i = 0; i < 1000; i++)
+  int *thing = calloc(10000000, sizeof(int));
+  for(int i = 0; i < 10000; i++)
     {
-      for (int j = 0; j < 235; j++)
+      for (int j = 0; j < 1000; j++)
+	{
+	  
+	  thing[pos] = i;
+	  pos ++;
+	}
+    }
+  free(thing);
+  return ScalarLogical(1);
+} 
+
+
+
+SEXP
+R_LoopTest3()
+{
+  int statj;
+  int *thing = calloc(50*5300000, sizeof(int));
+  int pos = 0;
+  for(int i = 0; i < 5300000; i++)
+    {
+      for (statj = 0; statj < 50; statj++)
 	{
 	  pos ++;
 	  thing[pos] = i;
-
 	}
     }
+  free(thing);
   return ScalarLogical(1);
 }
+

@@ -27,7 +27,7 @@ createIndex(data, type = "quad", columns = c(1, 2), ...)
 }
 }
 \details{
-%%  ~~ If necessary, more details than the description above ~~
+
 }
 \value{
   The class of the returned object depends on the tree type created,
