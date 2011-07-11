@@ -53,6 +53,6 @@ createIndex(data, type = "quad", columns = c(1, 2), ...)
  #maxDepth is a parameter settable for quad trees
  tree = createIndex(dat, maxDepth = 10, type="quad")
 }
-\keyword{ storage }
-\keyword{ lookup }
-\keyword{ indexing }% __ONLY ONE__ keyword per line
+\keyword{storage}
+\keyword{lookup}
+\keyword{indexing}

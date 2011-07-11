@@ -1,7 +1,7 @@
 Package: SearchTrees
 Type: Package
 Title: Spatial Search Trees
-Version: 0.4
+Version: 0.1
 Date: 2011-06-27
 Author: Gabriel Becker	
 Maintainer: Gabriel Becker <gmbecker@ucdavis.edu>

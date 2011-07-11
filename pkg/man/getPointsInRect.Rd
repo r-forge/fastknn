@@ -16,41 +16,37 @@ getPointsInRect(tree, left, right, down, up, data, columns)
 \arguments{
   \item{tree}{
     S4 object representing the tree to be searched over.
-}
-\item{left}{
-  Left bound of the rectangular range. Will be converted to
-  numeric.
-}
-\item{right}{
-  Right bound of the rectungular range. Will be converted to
-  numeric.
-}
-\item{down}{
-  Lower bound of the rectangular range. Will be converted to
-  numeric.
-}
-\item{up}{
-  Upper bound of the rectangular range. Will be converted to
-  numeric.
-}
+  }
+  \item{left}{
+    Left bound of the rectangular range. Will be converted to
+    numeric.
+  }
+  \item{right}{
+    Right bound of the rectungular range. Will be converted to
+    numeric.
+  }
+  \item{down}{
+    Lower bound of the rectangular range. Will be converted to
+    numeric.
+  }
+  \item{up}{
+    Upper bound of the rectangular range. Will be converted to
+    numeric.
+  }
   \item{data}{
-Data used to create the tree.
-}
-\item{columns}{
-  Columns in the \code{data} object which contain
-  the relevant data. 
-}
-}
-\details{
+    Data used to create the tree.
+  }
+  \item{columns}{
+    Columns in the \code{data} object which contain
+    the relevant data. 
+  }
 }
 \value{
   An integer vector is returned containing the indices (row numbers) of
   points which fall within the specified rectangle.
 }
-\references{
-}
 \author{
-Gabriel Becker
+  Gabriel Becker
 }
 \seealso{
   \code{\link{findKNN}},\code{\link{createIndex}} 
