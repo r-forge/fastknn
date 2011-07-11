@@ -1,38 +1,44 @@
 \name{getPointsInRect}
+\docType{methods}
 \alias{getPointsInRect}
-%- Also NEED an '\alias' for EACH other topic documented here.
+\alias{getPointsInRect,QuadTree-method}
 \title{
 Perform Rectangular Range Lookup on a Tree Object
 }
 \description{
-Determine which two dimensional points (which have already been stored
-in a search tree) fall within a specified rectangle.
+  Determine which two dimensional points (which have already
+  been stored in a search tree) fall within a specified
+  rectangle.
 }
 \usage{
-getPointsInRect(tree, left, right, down, up, data)
+getPointsInRect(tree, left, right, down, up, data, columns)
 }
 \arguments{
   \item{tree}{
     S4 object representing the tree to be searched over.
 }
 \item{left}{
-  Left bound of the rectangular range. Will be converted to numeric.
+  Left bound of the rectangular range. Will be converted to
+  numeric.
 }
 \item{right}{
-Right bound of the rectungular range. Will be converted to numeric.
+  Right bound of the rectungular range. Will be converted to
+  numeric.
 }
 \item{down}{
-  Lower bound of the rectangular range. Will be converted to numeric.
+  Lower bound of the rectangular range. Will be converted to
+  numeric.
 }
 \item{up}{
-Upper bound of the rectangular range. Will be converted to numeric.
+  Upper bound of the rectangular range. Will be converted to
+  numeric.
 }
   \item{data}{
 Data used to create the tree.
 }
 \item{columns}{
-  Columns in the \code{data} object which contain the relevant
-  data. Defaults to columns 1 and 2.
+  Columns in the \code{data} object which contain
+  the relevant data. 
 }
 }
 \details{
@@ -47,7 +53,7 @@ Data used to create the tree.
 Gabriel Becker
 }
 \seealso{
-  \link{\code{findKNN} } 
+  \code{\link{findKNN}},\code{\link{createIndex}} 
 }
 \examples{
 x = rnorm(100)

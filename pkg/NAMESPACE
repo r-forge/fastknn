@@ -1,2 +1,4 @@
 useDynLib(SearchTrees)
-exportPattern(".*")
+exportPattern(createIndex,
+              findKNN,
+              getPointsInRect)

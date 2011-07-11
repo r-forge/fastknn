@@ -1,14 +1,14 @@
-setClass("SearchTree", representation = list(ref = "externalptr", numNodes = "integer", dataNodes = "integer", maxDepth = "integer", maxBucketSize = "integer", points = "integer"))
+setClass("SearchTree", representation = list(ref = "externalptr", numNodes = "integer", dataNodes = "integer", maxDepth = "integer", maxBucket = "integer", points = "integer"))
 setClass("QuadTree", contains="SearchTree")
 
 setGeneric("getPointsInRect",
-           function(tree, left, right, down, up, data)
+           function(tree, left, right, down, up, data, columns = 1:2)
            standardGeneric("getPointsInRect")
            )
 setMethod("getPointsInRect", "QuadTree",
-          function(tree, left, right, down, up, data)
+          function(tree, left, right, down, up, data, columns)
           {
-            getPointsInBox(tree, left, right, down, up, data=data)
+            getPointsInBox(tree, left, right, down, up, data=data, cols = columns)
           }
           )
 
@@ -63,15 +63,9 @@ createIndex = function(data, type = "quad", columns = c(1, 2), ...)
         x = data[,columns[1]] 
         y = data[,columns[2]]
         quadTree(x,y, ... )
-      }
-   
+      }   
   }
         
-
-          
-
-
-
 quadTree = function(x, y, maxDepth = 7, minNodeArea, ...)
   { 
     xrange = range(x)
@@ -106,31 +100,6 @@ getTestOrder = function(tree, len)
 getMaxDepth = function(tree)
   { 
     .Call("R_Find_Max_Depth", tree)
-  }
-
-getKNNIndices = function(tree, newx, newy = NULL, allx, ally, k = 5)
-  {
-    #stop("KNN has not been modified to deal with the new buckets yet!")
-    if (length(allx) != length(ally))
-    stop("Old data vectors of unequal length detected.")
-  if (length(allx) != tree@points)
-    stop("Length of old data vectors does not match number of points in tree.")
-    if (is.null(newy))
-      {
-        if (dim(newx) && dim(newx)[2] > 1)
-          {
-            newy = newx[,2]
-            newx = newx[,1]
-          } else {
-            stop("Not able to find new y values.")
-          }
-      }
-        
-    res = .Call("R_Find_KNN", tree, newx, newy, allx, ally, as.integer(k));
-    if (length(newx) > 1)
-      matrix(res, ncol = k, byrow = TRUE)
-    else
-      res
   }
 
 getPointsInBox =  function(tree, left, right, down, up, x,y, data = NULL, cols = 1:2)
