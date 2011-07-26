@@ -45,6 +45,7 @@ void Free_Quad_Tree( qtree_t *tree);
 int Find_Max_Depth(qtree_t *tree, unsigned char curdepth);
 int * Grow_Return_Array(int **ar, int *size);
 void Get_XY_Ptrs( SEXP dattype, SEXP cols, SEXP Rx, SEXP Ry, double **ptrs);
+void Get_Tree_Attributes(qtree_t *tree, int *curattr);
 
 SEXP R_Build_Quadtree(SEXP Rx, SEXP Ry, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP RyMin, SEXP RmaxDepth);
 SEXP R_Find_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rfulldat, SEXP Rnewcols, SEXP Rfullcols, SEXP Rnewtyp, SEXP Rfulltyp, SEXP Rk, SEXP Rnewn, SEXP Rfulln);
@@ -54,6 +55,7 @@ SEXP R_Get_Top_Left_Order(SEXP Rtree, SEXP Rlen);
 void R_Free_Quad_Tree( SEXP treeptr);
 SEXP R_Find_Max_Depth(SEXP Rtree);
 
+//kdtree
 
 
 //typedef struct qtree qtree_t;

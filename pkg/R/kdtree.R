@@ -2,6 +2,7 @@ setClass("KDTree", representation = list(ref = "externalptr", k = "integer", max
 
 kdTree = function(data)
   {
+
     if(is.null(dim(data)))
       stop(paste("Data does not appear to be of the right class. is of class", class(data)))
 
@@ -17,5 +18,6 @@ kdTree = function(data)
 
 getKDTestOrder = function(tree)
   {
+    stop("kdTree functionality is not yet supported")
     .Call("R_Get_Left_Order", tree)
   }

@@ -2,6 +2,8 @@
 
 void R_Free_KD_Tree(SEXP Rtree);
 kdtree_t *Build_kdTree( int *oldorder, int npts, double *data, kdtree_t *parent, int k, int n, int *allorders);
+void Get_Left_Order(kdtree_t *tree, int *dats, int *pos);
+SEXP R_Get_Left_Order(SEXP Rtree);
 
 SEXP
 R_Build_kdTree(SEXP Rdata, SEXP Rorders, SEXP Rk, SEXP Rn)

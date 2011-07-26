@@ -2,3 +2,6 @@ useDynLib(SearchTrees)
 exportPattern(createIndex,
               findKNN,
               getPointsInRect)
+exportClass(SearchTree,
+            QuadTree
+            )

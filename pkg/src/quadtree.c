@@ -1,21 +1,10 @@
 #include "Rsearchtrees.h"
-#include <time.h>
 
-static long alloctimetaken = 0;
-static long getDatatime = 0;
-static long checkBoundtime = 0;
-static long checkDatatime = 0;
-static long descendtime = 0;
-static int clockerrs = 0;
-static int childrenChecked = 0;
-static int dataChecked = 0;
-static int dataInBoxCount = 0;
-static struct timespec outside, inside;
-static long recursiontime = 0;
+
 SEXP 
 R_Build_Quadtree(SEXP Rx, SEXP Ry, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP RyMin, SEXP RmaxDepth)
 {
-  //fprintf(stderr, "Starting R_Build_Quadtree\n"); fflush(stderr);
+  ////fprintf(stderr, "Starting R_Build_Quadtree\n"); fflush(stderr);
   double *x = REAL(Rx);
   double *y = REAL(Ry);
   int len = LENGTH(Rx);
@@ -150,7 +139,7 @@ qtree_t *Build_Branch(double up, double low, double left, double right, qtree_t 
   return toret;
 }
 
-static checked = 0;
+static int checked = 0;
 static int checkpassed = 0;
 SEXP
 //returns candidate indices for k nearest neighbors
@@ -217,7 +206,7 @@ R_Find_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rfulldat, SEXP Rnewcols, SEXP Rfullcol
       //initialize the rest with bad guesses just to have numbers to compare to.
       
       
-      if (ind > n - k)
+      if (ind >= n - k - 1)
 	ind = 0;
       for (int j = ind + 1; j <= ind + 1 + (k - cnt) ; j++)
 	{
@@ -362,33 +351,19 @@ Harvest_Data_KNN(qtree_t *node, int excludepos, double leftbound, double rightbo
 int 
 Check_Bounds(qtree_t *node, double left, double right, double down, double up)
 {
-  int res1, res2;
-  struct timespec before, after;
-  //res1 = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &before);
-  //clockerrs += res1 ? 1 : 0;
   int toret = 0;
   if ( ! (node -> left > right || node -> right < left || node -> upper < down || node -> lower > up) )
     {
       checkpassed++;
       toret = 1;
     }
-  //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &after);
-  //clockerrs += res2 ? 1 : 0;
-  //checkBoundtime += after.tv_nsec - before.tv_nsec;
   return toret;
 }
 
 SEXP
 R_Get_Points_In_Box(SEXP Rtree, SEXP Rleft, SEXP Rright, SEXP Rdown, SEXP Rup, SEXP Rx, SEXP Ry, SEXP dattype, SEXP cols)
 {
-  struct timespec before, after;
-  alloctimetaken = 0;
-  dataChecked = 0;
-  checkDatatime = 0;
-  getDatatime = 0;
-  clockerrs = 0;
-  childrenChecked = 0;
-  dataInBoxCount = 0;
+ 
   
   double up, down, left, right;
   double *x, *y;
@@ -397,28 +372,7 @@ R_Get_Points_In_Box(SEXP Rtree, SEXP Rleft, SEXP Rright, SEXP Rdown, SEXP Rup, S
   Get_XY_Ptrs(dattype, cols, Rx, Ry, ptrs );
   x = ptrs[0];
   y = ptrs[1];
-  /*  
-  if (INTEGER(dattype)[0] == 1)
-    {
-      int len = LENGTH(Rx)/INTEGER(Ry)[0];
-      int xcol = INTEGER(cols)[ 0 ];
-      int ycol = INTEGER(cols)[ 1 ];
-	
-      x = &(REAL( Rx )[ len * ( xcol - 1 ) ] );
-      y = &(REAL( Rx )[ len * ( ycol - 1 ) ] );
-    } else if (INTEGER(dattype)[0] == 2) 
-    {
-      int xcol = INTEGER(cols)[ 0 ];
-      int ycol = INTEGER(cols)[ 1 ];
-      
-      x = REAL(VECTOR_ELT(Rx, xcol - 1) );
-      y = REAL(VECTOR_ELT(Rx, ycol - 1 ) ) ;
-    
-  } else {
-    x = REAL(Rx);
-    y = REAL(Ry);
-  }
-  */
+ 
   qtree_t *tree = (qtree_t *) R_ExternalPtrAddr( GET_SLOT( Rtree, Rf_install( "ref" ) ) );
   up = REAL(Rup)[0];
   down = REAL(Rdown)[0];
@@ -429,12 +383,8 @@ R_Get_Points_In_Box(SEXP Rtree, SEXP Rleft, SEXP Rright, SEXP Rdown, SEXP Rup, S
   //XXX how many spots should we allocate? currently it is as many as there are points but this is probably way too many!
   int *found = calloc(size, sizeof(int)) ; //start at 100, double when necessary
   //int *found = calloc( INTEGER( GET_SLOT( Rtree, Rf_install( "points" ) ) )[ 0 ], sizeof(int));
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &before);
   Get_Data_In_Box(tree, left, right, down, up, &found, &pos, &size, x, y );
-  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &after);
-  getDatatime += (after.tv_sec - before.tv_sec) * 1000000000 + after.tv_nsec - before.tv_nsec;
   SEXP ans;
-  fprintf(stderr, "Total time taken in Grow_Return_Array (nanosecs): %ld \nTotal time taken checking data %ld\nTotal time spent in Get_Data_In_Box function: %ld\nTime spent build recursion frames: %ld\nNumber of clock errors detected: %d\nTotal data points chedcked: %d\nTimes Get_Data_In_Box was called: %d", alloctimetaken, checkDatatime, getDatatime, recursiontime, clockerrs, dataChecked, dataInBoxCount);fflush(stderr);
   PROTECT( ans = NEW_INTEGER( pos ) );
   for (int i = 0; i < pos; i ++)
     INTEGER( ans )[ i ] = found[i] + 1; 
@@ -476,19 +426,12 @@ void Get_XY_Ptrs( SEXP dattype, SEXP cols, SEXP Rx, SEXP Ry, double **ptrs)
 void
 Get_Data_In_Box(qtree_t *tree, double left, double right, double down, double up, int **found, int *pos, int *cursize,  double *x, double *y)
 {
-  int res, res2;
-  dataInBoxCount++;
-  struct timespec before1, before2;
-  struct timespec after1, after2;
+  
   int ind;
   double tmpx, tmpy;
   
   if (tree -> numdata > 0)
     {
-      res = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &before1);
-      clockerrs += res ? 1 : 0;
-      //if (res)
-      //{fprintf(stderr, "clock_gettime returned non-zero: %d", res); fflush(stderr);}
       for(int i =0; i < tree -> numdata; i ++)
 	{ 
 	  
@@ -509,12 +452,7 @@ Get_Data_In_Box(qtree_t *tree, double left, double right, double down, double up
 			if (*pos >= *cursize - 1)
 			  {
 			    
-			    res = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &before2);
-			    clockerrs += res ? 1 : 0;
 			    *found = Grow_Return_Array(found, cursize);
-			    res = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &after2);
-			    clockerrs += res ? 1 : 0;
-			    alloctimetaken += after2.tv_nsec - before2.tv_nsec;
 			  }
 			
 			( *found )[ *pos ] = ind;
@@ -527,10 +465,7 @@ Get_Data_In_Box(qtree_t *tree, double left, double right, double down, double up
 	    }
 	}
       
-      res2 = clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &after1);
-      clockerrs += res2 ? 1 : 0;
-      checkDatatime += after1.tv_nsec - before1.tv_nsec;
-      dataChecked += tree -> numdata;
+      
     }
   else if (tree -> uleft != NULL)
     {
@@ -788,7 +723,7 @@ call_R_Dist(double *pt1, double *pt2, int d, SEXP fun)
   
   if (err)
     {
-      fprintf(stderr, "There was an error evaluating the distance.\n"); fflush(stderr);
+      //fprintf(stderr, "There was an error evaluating the distance.\n"); fflush(stderr);
     }
   return REAL(ans)[0];
 }
