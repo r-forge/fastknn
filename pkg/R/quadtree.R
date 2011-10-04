@@ -1,13 +1,17 @@
-setClass("SearchTree", representation = list(ref = "externalptr", numNodes = "integer", dataNodes = "integer", maxDepth = "integer", maxBucket = "integer", points = "integer"))
+setClass("SearchTree", representation = list(ref = "externalptr", numNodes = "integer", dataNodes = "integer", maxDepth = "integer", maxBucket = "integer", points = "integer", "VIRTUAL"))
 setClass("QuadTree", contains="SearchTree")
 
 setGeneric("getPointsInRect",
-           function(tree, left, right, down, up, data, columns = 1:2)
+           function(tree, ptOne, ptTwo, data, columns = 1:2)
            standardGeneric("getPointsInRect")
            )
 setMethod("getPointsInRect", "QuadTree",
-          function(tree, left, right, down, up, data, columns)
+          function(tree, ptOne, ptTwo, data, columns)
           {
+            left = min(ptOne[1], ptTwo[1])
+            right = max(ptOne[1], ptTwo[1])
+            down = min(ptOne[2], ptTwo[2])
+            up = max(ptOne[2], ptTwo[2])
             getPointsInBox(tree, left, right, down, up, data=data, cols = columns)
           }
           )

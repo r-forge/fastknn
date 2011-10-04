@@ -11,28 +11,22 @@ Perform Rectangular Range Lookup on a Tree Object
   rectangle.
 }
 \usage{
-getPointsInRect(tree, left, right, down, up, data, columns)
+getPointsInRect(tree, ptOne, ptTwo, data, columns)
 }
 \arguments{
   \item{tree}{
     S4 object representing the tree to be searched over.
   }
-  \item{left}{
-    Left bound of the rectangular range. Will be converted to
-    numeric.
+  \item{ptOne}{
+    Numeric vector of length 2 indicating x and y coordinates of first
+    point defining a rectangle.
   }
-  \item{right}{
-    Right bound of the rectungular range. Will be converted to
-    numeric.
+  \item{ptTwo}{
+    Numeric vector of length 2 indicating x and y coordinates of second
+    point defining a rectangle. Must be non-colinear with ptOne in both
+    the x and y directions. 
   }
-  \item{down}{
-    Lower bound of the rectangular range. Will be converted to
-    numeric.
-  }
-  \item{up}{
-    Upper bound of the rectangular range. Will be converted to
-    numeric.
-  }
+  
   \item{data}{
     Data used to create the tree.
   }
@@ -57,7 +51,7 @@ y = rnorm(100)
 dat = cbind(x,y)
 tree = createIndex(dat) #default tree type is "quad"
 #our rectangle has corners at (0,0), (0,2), (2, 2), and (2,0)
-inds = getPointsInRect(tree, 0, 2, 0, 2, dat)
+inds = getPointsInRect(tree, c(0, 0), c(2, 2), dat)
 
 #prepare vector of plotting characters
 ch = rep(1, times = 100)

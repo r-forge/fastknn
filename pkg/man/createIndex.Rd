@@ -19,7 +19,7 @@ createIndex(data, type = "quad", columns = c(1, 2), ...)
   }
   \item{columns}{
     Which columns in \code{data} to use to create the tree. Defaults to
-    columns 1 and 2.
+    columns 1 and 2. 
   }
   \item{\dots}{
     Any additional/type specific parameters to be passed to the tree
@@ -43,6 +43,12 @@ createIndex(data, type = "quad", columns = c(1, 2), ...)
 \author{
   Gabriel Becker
 }
+\note{
+  When creating a quad tree, only two columns may be specified in the
+  columns argument. This is due to the fact that quad trees are designed
+  to store two dimensional data. Other (forthcoming) tree types will be
+  able to store data of arbitrary dimension.
+  }
 \seealso{
   \code{\link{findKNN}}, \code{\link{getPointsInRect}}
 }
