@@ -12,6 +12,13 @@ setMethod("getPointsInRect", "QuadTree",
             right = max(ptOne[1], ptTwo[1])
             down = min(ptOne[2], ptTwo[2])
             up = max(ptOne[2], ptTwo[2])
+            if(is(data, "matrix"))
+               mode(data) = "numeric"
+            else
+              {
+                for (i in columns)
+                  data[[i]] = as.numeric(data[[i]])
+              }
             getPointsInBox(tree, left, right, down, up, data=data, cols = columns)
           }
           )
