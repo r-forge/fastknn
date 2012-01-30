@@ -83,3 +83,8 @@ int **Grow_ReturnArray(int **found, int *cursize);
 void Rectangle_Pt_Lookup(qtree2_t *tree, double left, double right, double down, double up, int **found, int *pos, int *cursize);
 
 int CheckBounds(qtree2_t *node, double left, double right, double down, double up);
+int overlap(double left, double right, double down, double up, void *obj, char type);
+void Rectangle_Lookup(qtree2_t *tree, double left, double right, double down, double up, int **found, int *pos, int *cursize, char type);
+int Add_Rects_To_Bucket(qtree2_t *node, rect_t **rect, int numdata, unsigned char maxDepth);
+void get_tree_attributes(qtree2_t *tree, int *curattr);
+double get_max_dist(double *dists, int start, int k);

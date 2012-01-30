@@ -1,4 +1,6 @@
-setClass("SearchTree", representation = list(ref = "externalptr", numNodes = "integer", dataNodes = "integer", maxDepth = "integer", maxBucket = "integer", points = "integer", "VIRTUAL"))
+if(FALSE)
+  {
+    setClass("SearchTree", representation = list(ref = "externalptr", numNodes = "integer", dataNodes = "integer", maxDepth = "integer", maxBucket = "integer", points = "integer", "VIRTUAL"))
 setClass("QuadTree", contains="SearchTree")
 
 setGeneric("getPointsInRect",
@@ -139,4 +141,4 @@ getPointsInBox =  function(tree, left, right, down, up, x,y, data = NULL, cols =
             else
               .Call("R_Get_Points_In_Box", tree, left, right, down, up, x, y, dattype, cols)
           }
-          
+}          

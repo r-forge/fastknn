@@ -9,6 +9,19 @@ point_t *New_Point_Struct(double x, double y, int ind)
   return toret;
 }
 
+rect_t *New_Rect_Struct(double x1, double x2, double y1, double y2, int ind)
+{
+  rect_t *toret = malloc(sizeof(rect_t));
+  
+  toret->left = (x1 < x2) ? x1 : x2;
+  toret->right = (x1 < x2) ? x2 : x1;
+  toret->low = (y1 < y2) ? y1 : y2;
+  toret->high = (y1 < y2) ? y2 : y1;
+  toret->index = ind;
+  
+  return toret;
+}
+  
 int points_equal(point_t *pt1, point_t *pt2)
 {
   int ret = 1;
@@ -24,6 +37,53 @@ int points_equal(point_t *pt1, point_t *pt2)
     ret = 0;
   
   return ret;
+}
+SEXP
+R_Build_Quadtree_Rect(SEXP Rx1, SEXP Rx2, SEXP Ry1, SEXP Ry2, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP RyMin, SEXP RmaxDepth)
+{
+  double *x1 = REAL(Rx1);
+  double *x2 = REAL(Rx2);
+  double *y1 = REAL(Ry1);
+  double *y2 = REAL(Ry2);
+
+  int len = LENGTH(Rx1);
+
+  qtree2_t *tree;
+  
+  double upper = REAL(RyMax)[0];
+  double lower = REAL(RyMin)[0];
+  double left = REAL(RxMin)[0];
+  double right = REAL(RxMax)[0];
+  int maxDepth =  INTEGER(RmaxDepth)[0];
+
+  tree = Create_Branch(upper, lower, left, right, NULL, 0, 0, 2); 
+  rect_t **allrects = calloc(len, sizeof(rect_t *));
+  for(int i = 0; i < len; i++)
+    allrects[i] = New_Rect_Struct(x1[i], x2[i], y1[i], y2[i], i);
+
+  Add_To_Bucket(tree, allrects, 2, len, maxDepth);
+
+  SEXP klass, ans, ptr, ptr2;
+  int *attr = calloc(4, sizeof(int));
+  get_tree_attributes(tree, attr);
+PROTECT( klass = MAKE_CLASS( "QuadTree" ) );
+  PROTECT( ans = NEW( klass ) );
+  PROTECT( ptr = R_MakeExternalPtr( tree ,
+				    Rf_install( "QuadTree" ),
+				    R_NilValue ) );
+  R_RegisterCFinalizerEx(ptr, &R_free_quad_tree, 1);
+  SET_SLOT( ans, Rf_install( "ref" ), ptr );
+  SET_SLOT( ans, Rf_install( "points" ), ScalarInteger( len ) );
+  
+  SET_SLOT( ans, Rf_install( "numNodes" ), ScalarInteger(attr[0] ));
+  SET_SLOT( ans, Rf_install( "dataNodes" ), ScalarInteger(attr[1] ) );
+  SET_SLOT( ans, Rf_install( "maxDepth" ), ScalarInteger(attr[2] ) );
+
+  SET_SLOT( ans, Rf_install( "maxBucketSize" ), ScalarInteger( attr[3] ) );
+  
+  UNPROTECT(3);
+  return ans;  
+
 }
 
 SEXP
@@ -51,7 +111,7 @@ R_Build_Quadtree_Pt(SEXP Rx, SEXP Ry, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP R
       //int Add_To_Bucket(qtree2_t *tree, void *obj, int type, int numdata, unsigned char maxDepth)
 
     }
-      Add_To_Bucket(tree, allpoints, 1, len, maxDepth); //1 for point;
+  Add_To_Bucket(tree, allpoints, 1, len, maxDepth); //1 for point;
   //get info about the tree to return
   
   //first int is number of nodes, second int is number of nodes with data, third int is maxDepth, fourth int is max bucketsize
@@ -59,7 +119,7 @@ R_Build_Quadtree_Pt(SEXP Rx, SEXP Ry, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP R
   int *attr = calloc(4, sizeof(int));
   //Get_Tree_Attribs(tree, attr);
   SEXP klass, ans, ptr, ptr2;
-  PROTECT( klass = MAKE_CLASS( "QuadTree2" ) );
+  PROTECT( klass = MAKE_CLASS( "QuadTree" ) );
   PROTECT( ans = NEW( klass ) );
   PROTECT( ptr = R_MakeExternalPtr( tree ,
 				    Rf_install( "QuadTree" ),
@@ -89,15 +149,109 @@ int Add_To_Bucket(qtree2_t *tree, void *obj, int type, int numdata, unsigned cha
   switch(type) 
     {
     case 1:
-	ret = Add_Pts_To_Bucket(tree, (point_t **) obj, numdata, maxDepth);
+      ret = Add_Pts_To_Bucket(tree, (point_t **) obj, numdata, maxDepth);
       break;
     case 2:
+      ret = Add_Rects_To_Bucket(tree, (rect_t **) obj, numdata, maxDepth); 
       break;
     }
 
   return ret;
 }
 
+int contains(void *obj, double left, double right, double lower, double upper, char type)
+{
+  int toret = 0;
+  switch(type)
+    {
+    case 1:
+      break;
+    case 2:
+      {
+	rect_t *rec = (rect_t *) obj;
+	if(rec->left >= left && rec->right <= right && rec->low >=lower && rec->high <= upper)
+	  toret = 1;
+	break;
+      }
+    }
+
+  return toret;
+}
+
+int Can_Split(qtree2_t *node, void *rec, int maxDepth)
+{
+  int toret = 0;
+
+  if(node->depth < maxDepth)
+    {
+      double left = node->left;
+      double right = node->right;
+      double down = node -> lower;
+      double up = node->upper;
+      double midx = (node->left + node->right)/2.0;
+      double midy = (node->lower + node->upper)/2.0;
+      if(contains(rec, left, midx, down, midy, 2) )
+	toret = 1;
+      else if ( contains(rec, left, midx, midy, up, 2))
+	toret = 1;
+      else if ( contains(rec, midx, right, down, midy, 2))
+	toret = 1;
+      else if ( contains(rec, midx, right, midy, up, 2))
+	toret = 1;
+    }
+  return toret;
+
+}
+
+int Add_Rects_To_Bucket(qtree2_t *node, rect_t **rect, int numdata, unsigned char maxDepth)
+{
+  int ret = 0;
+  qtree2_t *curnode = node;
+  rect_t **olddat;
+  int olddatsize;
+  int found =0;
+  
+  for( int i =0; i<numdata; i++)
+    {
+      found=0;
+      curnode = Descend_To_Bucket(node, rect[i], 2 ); //2 for rects;
+      while(!found)
+	{
+	  if(contains(rect[i], curnode->left, curnode -> right, curnode->lower, curnode->upper, 2) || curnode->parent == NULL) //2 for rectangles
+	    {
+	      while(Can_Split(curnode, (void *) rect[i], maxDepth))
+		{
+		  Increase_Depth(curnode);
+		  curnode = Descend_To_Bucket(curnode, rect[i], 2);
+		}
+	      
+	      found = 1;
+	      //if there is no data already there no memory has been allocated yet.
+	      if (curnode -> numdata == 0)
+		{
+		  curnode -> data  = calloc(1, sizeof(rect_t));
+		  curnode -> data[0] = (int *) rect[i];
+		  curnode -> numdata = 1;
+		} else  { 
+		//we are at max depth so we must add the point to this bucket.
+	  //realloc preserves values of previous elements
+		curnode -> data = realloc(curnode -> data, sizeof(rect_t) * (curnode -> numdata + 1));
+		curnode -> data [ curnode -> numdata ] = (int *) rect[i];
+		curnode -> numdata ++;
+		
+		ret = 1 ;
+		
+	      } 
+	    }else {
+	    curnode = curnode->parent;
+	  }
+	}
+    
+    }
+
+  return ret;
+
+}
 int Add_Pts_To_Bucket(qtree2_t *node, point_t **pt, int numdata, unsigned char maxDepth)
 {
   int ret = 0;
@@ -182,7 +336,6 @@ SEXP
 R_Find_Neighbors_Pts(SEXP Rtree, SEXP Rnewx, SEXP Rnewy, SEXP Rk)
 {
   qtree2_t *tree = (qtree2_t *) R_ExternalPtrAddr( GET_SLOT( Rtree, Rf_install( "ref" ) ) );
-  point_t **pts = (point_t **) R_ExternalPtrAddr( GET_SLOT( Rtree, Rf_install( "data" ) ) );
 
   double *x = REAL( Rnewx );
   double *y = REAL( Rnewy );
@@ -212,7 +365,7 @@ R_Find_Neighbors_Pts(SEXP Rtree, SEXP Rnewx, SEXP Rnewy, SEXP Rk)
 	{
 	  for (int i  = 0; i < curnode -> numdata; i++)
 	    {
-	      tmpdist = eucl_dist_pts(newpt, curnode->data[i]);
+	      tmpdist = eucl_dist_pts(newpt, (point_t *) curnode->data[i]);
 	      oldpt = (point_t *) curnode -> data [ i ] ;
 	      insert_dist( (double *) &dists, tmpdist, chosen, oldpt, k, l*k);
 	      initcnt ++;
@@ -253,6 +406,13 @@ qtree2_t *Descend_To_Bucket(qtree2_t *node, void *obj, int type)
       //points
       ret = Descend_To_Bucket_Pts(node, (point_t*) obj);
       break;
+    case 2:
+      {
+	rect_t *rec  = (rect_t *)obj;
+	point_t *pt = New_Point_Struct((rec->left + rec->right)/2.0, (rec->low + rec->high)/2.0, 0);
+	ret = Descend_To_Bucket(node, pt, 1);
+	free(pt);
+      }
     }
   return ret;
 }
@@ -317,8 +477,36 @@ void insert_dist(double *dists, double newdist, point_t **pts, point_t *newpt, i
     }
   return;
 }
+/*
+SEXP R_Get_KNN(SEXP Rtree, SEXP Rnewdat, SEXP Rnewcols, SEXP Rk)
+//KNN only makes sense for points, so we can assume points throughout.
+{
+  qtree2_t *tree = (qtree2_t *) R_ExternalPtrAddr( GET_SLOT( Rtree, Rf_install( "ref" ) ) );
 
-
+  int k = INTEGER( Rk ) [ 0 ];
+  //assuming data.frame
+  int *cols = INTEGER(Rnewcols);
+  int newn = LENGTH( VECTOR_ELT( Rnewdat, cols[0] - 1));
+  double dists[newn * k];
+  point_t **found = calloc(newn * k, sizeof(point_t*));
+  double *x = REAL( VECTOR_ELT( Rnewdat, cols[0] - 1));
+  double *y = REAL( VECTOR_ELT( Rnewdat, cols[1] - 1));
+  int pos, cnt = 0;
+  point_t *newpt;
+  qtree2_t * cur;
+  double tmpmaxx = tree->right - tree->left;
+  double tmpmaxy = tree->upper - tree->lower;
+  for (int i =0; i < newn * k; i++)
+    dists[i] = -1.0;
+  for (int l = 0; l < newn; l++)
+    {
+      cnt = 0 ;
+      newpt = New_Point_Struct(x[l], y[l], -1); //-1 because no meaningful index.
+      cur = Descend_To_Bucket(tree, newpt);
+      Harvest_KNN_Pts(cur, -1, newpt->x - tmpmaxx, newpt->x + tmpmaxx, newpt->y - tmpmaxy, newpt->y + tmpmaxy, found, &dists, newpt, l*k);
+      
+      }
+*/
 //	  Harvest_KNN_Pts(curnode, pos, newpt -> x - curmaxdist, newpt -> x + curmaxdist, newpt -> y - curmaxdist, newpt -> y + curmaxdist, &chosen, &dists, newpt, k, l*k);
 
 void Harvest_KNN_Pts(qtree2_t *node, int excludepos, double leftbound, double rightbound, double lowbound, double highbound, point_t **pts, double *dists, point_t *newpt, int k, int start)
@@ -475,21 +663,160 @@ R_Rectangle_Lookup(SEXP Rtree, SEXP Rxlims, SEXP Rylims)
   int size = 100;
   int **found = calloc(size, sizeof(int*));
   int pos = 0;
+  /*
   switch(tree->datatype)
     {
     case 1:
       Rectangle_Pt_Lookup(tree, left, right, down, up, found, &pos, &size);
       break;
+    case 2:
+      Rectangle_Rect_Lookup(tree, left, right, down, up, found, &pos, &size);
+      break;
     }
+  */
+  Rectangle_Lookup(tree, left, right, down, up, found, &pos, &size, tree->datatype);
   SEXP ans;
   PROTECT( ans = NEW_INTEGER( pos ) );
   for (int i = 0; i < pos; i ++)
-    INTEGER( ans )[ i ] = ( (point_t *)found[i] ) ->index + 1; 
+    {
+      switch(tree->datatype)
+	{
+	case 1:
+	  INTEGER( ans )[ i ] = ( (point_t *)found[i] ) ->index + 1; 
+	  break;
+	case 2:
+	  INTEGER( ans )[ i ] = ( (rect_t *)found[i] ) ->index + 1; 
+	  break;
+	}
+    }
   UNPROTECT(1);
   free(found);
   return ans;
 }
 
+
+void Rectangle_Lookup(qtree2_t *tree, double left, double right, double down, double up, int **found, int *pos, int *cursize, char type)
+{
+
+  void *cur;
+  if(tree -> numdata)
+    {
+      for(int i = 0; i < tree -> numdata; i++)
+	{
+	  cur=  tree->data[i];
+	  if(overlap(left, right, down, up, cur, type))
+	    {
+	      if( *pos >= *cursize -1)
+		found = Grow_ReturnArray(found, cursize);
+	      
+	      found[*pos] =(int *) cur;
+	      *pos += 1;
+	      
+	      
+	    }
+	}
+    }
+    if (tree -> uleft != NULL)
+    {
+      qtree2_t *tmptree = tree -> uleft;
+      if (CheckBounds(tmptree, left, right, down, up))
+	{
+	  Rectangle_Lookup(tmptree, left, right, down, up, found, pos, cursize, type);
+	}
+      tmptree = tree -> uright;
+      if (CheckBounds(tmptree, left, right, down, up))
+	{
+	  Rectangle_Lookup(tmptree, left, right, down, up, found, pos, cursize, type);
+	}
+      tmptree = tree ->lleft;
+      if (CheckBounds(tmptree, left, right, down, up))
+	{
+	  Rectangle_Lookup(tmptree, left, right, down, up, found, pos, cursize, type);
+	}
+      tmptree = tree -> lright;
+      if (CheckBounds(tmptree, left, right, down, up))
+	{
+	  Rectangle_Lookup(tmptree, left, right, down, up, found, pos, cursize, type);
+	}
+      
+
+    }
+}
+
+int overlap(double left, double right, double down, double up, void *obj, char type)
+{
+  int toret = 0;
+  switch(type)
+    {
+    case 1:
+      {
+	point_t *pt = (point_t *) obj;
+	if (pt ->x >= left && pt->x <= right && pt->y >= down &&  pt->y <= up)
+	  toret = 1;
+	break;
+      }
+    case 2:
+      {
+	rect_t *cur = (rect_t *) obj;
+	if ( (cur->left <= right && cur-> right >= left) && (cur-> low <= up && cur->high >= down))
+	  toret = 1; 
+	break;
+      }
+    }
+
+  return toret;
+}
+      
+
+/*
+void Rectangle_Rect_Lookup(qtree2_t *tree, double left, double right, double down, double up, int **found, int *pos, int *cursize)
+{
+  point_t *pt;
+  if(tree -> numdata)
+    {
+      for(int i = 0; i < tree -> numdata; i++)
+	{
+	  pt= (point_t *) tree->data[i];
+	  if(pt->x >= left && pt->x <= right && pt-> y >= down && pt->y <= up)
+	    {
+	      if( *pos >= *cursize -1)
+		found = Grow_ReturnArray(found, cursize);
+	      
+	      found[*pos] =(int *) pt;
+	      *pos += 1;
+	      
+
+	    }
+	}
+    } else if (tree -> uleft != NULL)
+    {
+      qtree2_t *tmptree = tree -> uleft;
+      if (CheckBounds(tmptree, left, right, down, up))
+	{
+	  Rectangle_Pt_Lookup(tmptree, left, right, down, up, found, pos, cursize);
+	}
+      tmptree = tree -> uright;
+      if (CheckBounds(tmptree, left, right, down, up))
+	{
+	  Rectangle_Pt_Lookup(tmptree, left, right, down, up, found, pos, cursize);
+	}
+      tmptree = tree ->lleft;
+      if (CheckBounds(tmptree, left, right, down, up))
+	{
+	  Rectangle_Pt_Lookup(tmptree, left, right, down, up, found, pos, cursize);
+	}
+      tmptree = tree -> lright;
+      if (CheckBounds(tmptree, left, right, down, up))
+	{
+	  Rectangle_Pt_Lookup(tmptree, left, right, down, up, found, pos, cursize);
+	}
+      
+
+    }
+  
+
+}
+*/
 void Rectangle_Pt_Lookup(qtree2_t *tree, double left, double right, double down, double up, int **found, int *pos, int *cursize)
 {
   point_t *pt;
@@ -563,3 +890,27 @@ CheckBounds(qtree2_t *node, double left, double right, double down, double up)
   return toret;
 }
 
+
+void get_tree_attributes(qtree2_t *tree, int *curattr)
+{
+  //first int is number of nodes, second int is number of nodes with data, third int is maxDepth, fourth int is max bucketsize
+  curattr[0]++;
+  
+  
+  if(tree -> numdata > 0)
+    {
+      curattr[1]++;
+      curattr[3] = (curattr[3] >= tree -> numdata) ? curattr[3] : tree -> numdata;
+      curattr[2] = (curattr[2] >= tree -> depth) ? curattr[2] : (int) tree -> depth;
+    }
+
+  if(tree->uleft != NULL)
+    {
+      get_tree_attributes(tree -> uleft, curattr);
+      get_tree_attributes(tree -> uright, curattr);
+      get_tree_attributes(tree -> lright, curattr);
+      get_tree_attributes(tree -> lleft, curattr);
+    }
+     
+  return; 
+}
