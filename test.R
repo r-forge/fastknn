@@ -18,7 +18,8 @@ dotest = function()
   }
 
 
-
+x = rnorm(100)
+y = rnorm(100)
 dat = cbind(x,y)
 tree = createTree(dat)
 thing = rectLookup(tree, c(0,0), c(1,1))

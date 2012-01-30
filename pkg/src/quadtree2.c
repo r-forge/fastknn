@@ -79,7 +79,7 @@ PROTECT( klass = MAKE_CLASS( "QuadTree" ) );
   SET_SLOT( ans, Rf_install( "dataNodes" ), ScalarInteger(attr[1] ) );
   SET_SLOT( ans, Rf_install( "maxDepth" ), ScalarInteger(attr[2] ) );
 
-  SET_SLOT( ans, Rf_install( "maxBucketSize" ), ScalarInteger( attr[3] ) );
+  SET_SLOT( ans, Rf_install( "maxBucket" ), ScalarInteger( attr[3] ) );
   
   UNPROTECT(3);
   return ans;  
@@ -117,7 +117,7 @@ R_Build_Quadtree_Pt(SEXP Rx, SEXP Ry, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP R
   //first int is number of nodes, second int is number of nodes with data, third int is maxDepth, fourth int is max bucketsize
 
   int *attr = calloc(4, sizeof(int));
-  //Get_Tree_Attribs(tree, attr);
+  get_tree_attributes(tree, attr);
   SEXP klass, ans, ptr, ptr2;
   PROTECT( klass = MAKE_CLASS( "QuadTree" ) );
   PROTECT( ans = NEW( klass ) );
@@ -136,7 +136,7 @@ R_Build_Quadtree_Pt(SEXP Rx, SEXP Ry, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP R
   SET_SLOT( ans, Rf_install( "dataNodes" ), ScalarInteger(attr[1] ) );
   SET_SLOT( ans, Rf_install( "maxDepth" ), ScalarInteger(attr[2] ) );
 
-  SET_SLOT( ans, Rf_install( "maxBucketSize" ), ScalarInteger( attr[3] ) );
+  SET_SLOT( ans, Rf_install( "maxBucket" ), ScalarInteger( attr[3] ) );
   UNPROTECT(4);
   free(attr);
   return ans;  
