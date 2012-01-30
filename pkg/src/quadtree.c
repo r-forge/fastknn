@@ -469,24 +469,7 @@ Get_Data_In_Box(qtree_t *tree, double left, double right, double down, double up
     }
   else if (tree -> uleft != NULL)
     {
-      /*
-      childrenChecked++;
-      //double midx = (tree -> left + tree -> right ) / 2.0;
-      //double midy = (tree -> down + tree -> up ) / 2.0;
-      
-      int possible[4] = {1, 1, 1, 1};
-      Check_Children(tree, left, right, down, up, possible);
-
-      if (possible[0]) //uleft
-	Get_Data_In_Box(tree -> uleft, left, right, down, up, found, pos, cursize, x, y);
-      if (possible[1]) //uright
-	Get_Data_In_Box(tree -> uright, left, right, down, up, found, pos, cursize, x, y);
-      if (possible[2]) //lright
-	Get_Data_In_Box(tree -> lright, left, right, down, up, found, pos, cursize, x, y);
-      if(possible[3]) //lleft
-	Get_Data_In_Box(tree -> lleft, left, right, down, up, found, pos, cursize, x, y);
-
-      */
+ 
       qtree_t *tmptree = tree -> uleft;
       if (Check_Bounds(tmptree, left, right, down, up))
 	{

@@ -12,12 +12,31 @@ typedef struct qtree {
   char pos; //to indicate which sector in the parent node this node is. 1 = uleft 2 = uright 3=lright 4 = lleft;
   unsigned char depth;
   int *data;
+  char datatype;//indicates the type of objects stored in the tree. 1=points 2=rectangle
   struct qtree *parent;
   struct qtree *uleft;
   struct qtree *uright;
   struct qtree *lleft;
   struct qtree *lright;
 } qtree_t;
+
+
+typedef struct point {
+  double x;
+  double y;
+  int index;
+} point_t;
+
+typedef struct rect {
+  //parallel to the axes only, other rectangles will need to wait until we do the general polygon case;
+  double left; //lower x bound
+  double right; //upper x bound
+  double low; //lower y bound
+  double high; //lower x bound
+  struct rect *parent;
+  int index;
+} rect_t;
+
 
 typedef struct kdtree {
   int depth;
