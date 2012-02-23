@@ -39,7 +39,7 @@ int points_equal(point_t *pt1, point_t *pt2)
   return ret;
 }
 SEXP
-R_Build_Quadtree_Rect(SEXP Rx1, SEXP Rx2, SEXP Ry1, SEXP Ry2, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP RyMin, SEXP RmaxDepth)
+R_Build_Quadtree_Rect(SEXP Rx1, SEXP Ry1, SEXP Rx2, SEXP Ry2, SEXP RxMax, SEXP RxMin, SEXP RyMax, SEXP RyMin, SEXP RmaxDepth)
 {
   double *x1 = REAL(Rx1);
   double *x2 = REAL(Rx2);
@@ -66,7 +66,7 @@ R_Build_Quadtree_Rect(SEXP Rx1, SEXP Rx2, SEXP Ry1, SEXP Ry2, SEXP RxMax, SEXP R
   SEXP klass, ans, ptr, ptr2;
   int *attr = calloc(4, sizeof(int));
   get_tree_attributes(tree, attr);
-PROTECT( klass = MAKE_CLASS( "QuadTree" ) );
+  PROTECT( klass = MAKE_CLASS( "QuadTree" ) );
   PROTECT( ans = NEW( klass ) );
   PROTECT( ptr = R_MakeExternalPtr( tree ,
 				    Rf_install( "QuadTree" ),
@@ -662,11 +662,12 @@ R_Rectangle_Lookup(SEXP Rtree, SEXP Rxlims, SEXP Rylims)
   up = ylim[1];
   int size = 100;
   //changed from calloc to malloc trying to chase down crashing bug
-  int **found = malloc(size*sizeof(int*));
-  allocInternalMem(found, 0, size, tree->datatype);
+  int structsize = get_struct_size(tree->datatype);
+  int *found = malloc(size*structsize);
+  //allocInternalMem(found, 0, size, tree->datatype);
   int pos = 0;
-  fprintf(stderr, "\n"); fflush(stderr);
-  Rectangle_Lookup(tree, left, right, down, up, found, &pos, &size, tree->datatype);
+  //fprintf(stderr, "\n"); fflush(stderr);
+  Rectangle_Lookup(tree, left, right, down, up, &found, &pos, &size, tree->datatype);
   SEXP ans;
   PROTECT( ans = NEW_INTEGER( pos ) );
   for (int i = 0; i < pos; i ++)
@@ -674,10 +675,10 @@ R_Rectangle_Lookup(SEXP Rtree, SEXP Rxlims, SEXP Rylims)
       switch(tree->datatype)
 	{
 	case 1:
-	  INTEGER( ans )[ i ] = ( (point_t *)found[i] ) ->index + 1; 
+	  INTEGER( ans )[ i ] = ( (point_t *)found)[i].index + 1; 
 	  break;
 	case 2:
-	  INTEGER( ans )[ i ] = ( (rect_t *)found[i] ) ->index + 1; 
+	  INTEGER( ans )[ i ] = ( (rect_t *)found)[i].index + 1; 
 	  break;
 	}
     }
@@ -686,6 +687,20 @@ R_Rectangle_Lookup(SEXP Rtree, SEXP Rxlims, SEXP Rylims)
   return ans;
 }
 
+int get_struct_size(char type)
+{
+  int ret = 0;
+  switch(type)
+    {
+    case 1:
+      ret = sizeof(point_t);
+      break;
+    case 2:
+      ret = sizeof(rect_t);
+      break;
+    }
+  return ret;
+}
 void allocInternalMem(int **arr, int start, int num, char type)
 {
   int ptrsize;
@@ -711,7 +726,7 @@ void allocInternalMem(int **arr, int start, int num, char type)
 
 void Rectangle_Lookup(qtree2_t *tree, double left, double right, double down, double up, int **found, int *pos, int *cursize, char type)
 {
-
+  
 
   void *cur;
   if(tree -> numdata)
@@ -722,19 +737,26 @@ void Rectangle_Lookup(qtree2_t *tree, double left, double right, double down, do
 	  if(overlap(left, right, down, up, cur, type))
 	    {
 	      if( *pos >= *cursize)
-		found = Grow_ReturnArray(found, cursize, type);
-	      
-	      found[*pos] =(int *) cur;
-	      *pos += 1;
-	      if(type == 1 & *pos >=101)
 		{
-		  fprintf(stderr, "%d: %d   ", *pos, ((point_t *)found[100])-> index); fflush(stderr);
+		  //fprintf(stderr, "\nOld Address: %lx", found);fflush(stderr);
+		  Grow_ReturnArray(found, cursize, type);
+		  //fprintf(stderr, "\nNew Address: %lx", found);fflush(stderr);
 		}
+	      switch(type)
+		{
+		case 1:
+		  ((point_t*)*found)[*pos] =*((point_t *) cur);
+		  break;
+		case 2:
+		  ((rect_t*)*found)[*pos] = *((rect_t *) cur);
+		}
+	      *pos += 1;
+	      
 	      
 	    }
 	}
     }
-    if (tree -> uleft != NULL)
+  if (tree -> uleft != NULL)
     {
       qtree2_t *tmptree = tree -> uleft;
       if (CheckBounds(tmptree, left, right, down, up))
@@ -882,6 +904,7 @@ void Rectangle_Pt_Lookup(qtree2_t *tree, double left, double right, double down,
     }
 }
  */
+  /* Old version, causing segfaults if/data corruption
  int **Grow_ReturnArray(int **found, int *cursize, char type)
 {
   int **toret = NULL;
@@ -900,6 +923,29 @@ void Rectangle_Pt_Lookup(qtree2_t *tree, double left, double right, double down,
 //toret = memcpy(topret, ar, oldsize * sizeof(int));
   
   return toret;
+}
+  */
+
+ void Grow_ReturnArray(int **found, int *cursize, char type)
+{
+  int *toret = NULL;
+  int oldsize = *cursize;
+  int newsize;
+  if(oldsize < 1000)
+    newsize = oldsize *2;
+  else
+    newsize = 1.1*oldsize;
+  
+  //toret = realloc( found, newsize * sizeof(int*));
+  
+  int structsize = get_struct_size(type);
+  toret = realloc(*found, newsize*structsize);  
+  *cursize = newsize;
+  //fprintf(stderr, "Grow_ReturnArray successful. New size: %d\n", newsize);fflush(stderr);
+//toret = memcpy(topret, ar, oldsize * sizeof(int));
+  *found = toret;
+  //return toret;
+  return;
 }
 
 int 

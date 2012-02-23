@@ -79,7 +79,7 @@ SEXP R_Find_MaxDepth(SEXP Rtree);
 //point_t *New_Point_Struct(double x, double y, int ind);
 double eucl_dist_pts(point_t *pt1, point_t *pt2);
 
-int **Grow_ReturnArray(int **found, int *cursize, char type);
+void Grow_ReturnArray(int **found, int *cursize, char type);
 void Rectangle_Pt_Lookup(qtree2_t *tree, double left, double right, double down, double up, int **found, int *pos, int *cursize);
 
 int CheckBounds(qtree2_t *node, double left, double right, double down, double up);
@@ -89,3 +89,4 @@ int Add_Rects_To_Bucket(qtree2_t *node, rect_t **rect, int numdata, unsigned cha
 void get_tree_attributes(qtree2_t *tree, int *curattr);
 double get_max_dist(double *dists, int start, int k);
 void allocInternalMem(int **arr, int start, int num, char type);
+int get_struct_size(char type);

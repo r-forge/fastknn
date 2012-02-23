@@ -40,7 +40,7 @@ findMaxDepth = function(maxDepth, minNodeArea, xlim, ylim)
   }
     
 
-createTree = function(data, treeType = "quad", dataType = "point", columns = c(1, 2), ...)
+createTree = function(data, treeType = "quad", dataType = "point", columns = if (dataType=="point") 1:2 else 1:4, preSorted = FALSE, ...)
   {
     if (tolower(treeType) == "quad")
       {
@@ -52,13 +52,7 @@ createTree = function(data, treeType = "quad", dataType = "point", columns = c(1
             y = data[,columns[2]]
             ret = quadTree2(x,y, ... )
           } else if (dataType == "rect") {
-            reord = apply(data[,columns], 1, function(dat)
-              {
-                #order passed in as (x1, y1), (x2, y2) reordered to x1, x2, y1, y2 where x1<x2 and y1<y2
-                
-                c(sort(dat[c(1,3)]), sort(dat[c(2,4)]))
-              })
-            ret = rectTree(reord[1,], reord[2,], reord[3,], reord[4,], ...)
+            ret = rectTree(data[, columns[1]], data[, columns[2]], data[, columns[3]], data[, columns[4]])
             dataType = "rectangle"
           }
         ret@dataType = dataType
