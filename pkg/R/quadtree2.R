@@ -40,7 +40,7 @@ findMaxDepth = function(maxDepth, minNodeArea, xlim, ylim)
   }
     
 
-createTree = function(data, treeType = "quad", dataType = "point", columns = if (dataType=="point") 1:2 else 1:4, preSorted = FALSE, ...)
+createTree = function(data, treeType = "quad", dataType = "point", columns = if (dataType=="point") 1:2 else 1:4, ...)
   {
     if (tolower(treeType) == "quad")
       {
